@@ -1,3 +1,14 @@
+terraform {
+  required_providers {
+    aws = {
+      source  = "hashicorp/aws"
+      version = "~> 4.67.0"  # Pin to the last stable v4 version
+    }
+  }
+
+  required_version = ">= 1.3.0"
+}
+
 locals {
   region = "us-east-1"
   name   = "eks-cluster"
@@ -12,5 +23,5 @@ locals {
 }
 
 provider "aws" {
-  region = "us-east-1"
+  region = local.region
 }
