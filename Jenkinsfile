@@ -52,16 +52,32 @@ pipeline {
         stage('Terraform Plan') {
             steps {
                 dir('terraform') {
-                    sh 'terraform plan'
+                    sh 'terraform plan -out=tfplan'
                 }
-                input message: "Approve Terraform ${params.action}?", ok: "Proceed"
+            }
+        }
+
+        stage('Approval') {
+            when {
+                expression { params.action == 'apply' || params.action == 'destroy' }
+            }
+            steps {
+                script {
+                    input message: "Approve Terraform ${params.action}?", ok: "Proceed"
+                }
             }
         }
 
         stage('Terraform Apply/Destroy') {
             steps {
                 dir('terraform') {
-                    sh "terraform ${params.action} --auto-approve"
+                    script {
+                        if (params.action == 'apply') {
+                            sh 'terraform apply tfplan'
+                        } else if (params.action == 'destroy') {
+                            sh 'terraform destroy --auto-approve'
+                        }
+                    }
                 }
             }
         }
@@ -75,7 +91,9 @@ pipeline {
             echo "Terraform ${params.action} failed."
         }
         always {
-            cleanWs()
+            dir('terraform') {
+                sh 'rm -f tfplan'
+            }
         }
     }
 }
